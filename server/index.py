@@ -13,7 +13,10 @@ async def time(websocket, path):
         print("Client closed the connection")
 
 if __name__ == "__main__":
-    start_server = websockets.serve(time, '127.0.0.1', 5678)
+    try:
+        start_server = websockets.serve(time, '127.0.0.1', 5678)
 
-    asyncio.get_event_loop().run_until_complete(start_server)
-    asyncio.get_event_loop().run_forever()
+        asyncio.get_event_loop().run_until_complete(start_server)
+        asyncio.get_event_loop().run_forever()
+    except KeyboardInterrupt:
+        print("We've been fucked")
