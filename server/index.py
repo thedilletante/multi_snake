@@ -15,13 +15,15 @@ def hello(websocket, path):
 
 @asyncio.coroutine
 def time(websocket, path):
-    while True:
-        now = datetime.datetime.utcnow().isoformat() + 'Z'
-        message = yield from websocket.recv()
-        print("> {}".format(message))
-        yield from websocket.send("Fuck you {}".format(now))
-        # yield from asyncio.sleep(random.random() * 3)
-
+    try:
+        while True:
+            now = datetime.datetime.utcnow().isoformat() + 'Z'
+            message = yield from websocket.recv()
+            print("> {}".format(message))
+            yield from websocket.send("Fuck you {}".format(now))
+            # yield from asyncio.sleep(random.random() * 3)
+    except websockets.ConnectionClosed:
+        print("Client closed the connection")
 
 if __name__ == "__main__":
     # start_server = websockets.serve(hello, 'localhost', 8765)
