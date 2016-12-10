@@ -9,6 +9,21 @@ from enum import Enum
 Client = namedtuple("Client", ["id", "fd"])
 Position = namedtuple("Position", ["x", "y"])
 
+
+# class Position:
+#     def __init__(self, x, y):
+#         self.x = x
+#         self.y = y
+#
+#     def __hash__(self):
+#         return hash((self.x, self.y))
+#
+#     def __eq__(self, other):
+#         return (self.x, self.y) == (other.x, other.y)
+#
+#     def __ne__(self, other):
+#         return (self.x, self.y) != (other.x, other.y)
+
 # protocol
 def greeting(id):
     return dumps({"id": id})
@@ -92,6 +107,7 @@ class IntersectionCalculator:
     def __init__(self):
         pass
 
+
 class Snake:
     def __init__(self, head_position, length, direction):
         self.body = [head_position]
@@ -104,7 +120,7 @@ class Snake:
 
     def move(self, speed=1):
         for i in range(0, speed):
-            self.body.pop() # TODO: avoid of pessimisation
+            self.body.pop()  # TODO: avoid of pessimisation
             self.body = [self.get_new_head_position()] + self.body
 
     def get_new_head_position(self):
@@ -116,16 +132,26 @@ class Snake:
 
 
 class GameBoard:
-
-    def __init__(self, weight, height, clients_info, speed=1):
-        self.weight = weight
+    def __init__(self, width, height, clients_info, speed=1):
+        self.width = width
         self.height = height
         self.clients_info = clients_info
         self.speed = speed
+        self.loose_snakes = {}
 
     def next(self):
+        snake_body_map = {}
+        snake_head_map = {}
+        self.loose_snakes = {}
         for id, snake in self.clients_info.items():
             snake.move()
+            for position in snake.body:
+                snake_body_map[position] = id
+            snake_head_map[snake.body[0]] = id
+
+        self.define_loose_snakes(snake_head_map, snake_body_map)
+        for id in self.loose_snakes:
+            del(self.clients_info[id])
 
     def turn_client(self, id, direction):
         if id in self.clients_info:
@@ -134,12 +160,39 @@ class GameBoard:
     def increase_speed(self):
         self.speed *= 2
 
+    def get_client_count(self):
+        return len(self.clients_info)
+
+    def winner_congratulate(self):
+        return "congratulation! {} win!".format(next(iter(self.clients_info.keys())))
+
     def encode_state(self):
-        info = {}
+        live_info = {}
         for id, client_info in self.clients_info.items():
-            info[id] = {"head":{"x":client_info.body[0].x, "y":client_info.body[0].y},
-                        "direction":str(client_info.direction)}
-        return dumps(info)
+            live_info[id] = {
+                "head": {
+                    "x": client_info.body[0].x,
+                    "y": client_info.body[0].y
+                },
+                "direction": str(client_info.direction)}
+        loose_info = {}
+        for id, position in self.loose_snakes.items():
+            loose_info[id] = {
+                "x": position.x,
+                "y": position.y
+            }
+        output = {
+            "loose_info": loose_info,
+            "live_info": live_info
+        }
+        return dumps(output)
+
+    def define_loose_snakes(self, head_map, body_map):
+        for position, id in head_map.items():
+            if position in body_map and id != body_map[position]:
+                self.loose_snakes[id] = position
+            if position.x < 0 or position.x > self.width or position.y < 0 or position.y > self.height:
+                self.loose_snakes[id] = position
 
 
 class SnakeServer:
@@ -201,6 +254,13 @@ class SnakeServer:
             for client in self.clients:
                 try:
                     await client.fd.send(self.board.encode_state())
+                    if self.board.get_client_count() == 1:
+                        await client.fd.send(format("<h1>{}</h1>", self.board.winner_congratulate()))
+                        await asyncio.sleep(20000)
+                    if self.board.get_client_count() == 0:
+                        await client.fd.send(format("<h1>You're all die fucking loosers</h1>"))
+                        await asyncio.sleep(20000)
+
                 except websockets.ConnectionClosed:
                     self.clients.remove(client)
 
@@ -225,33 +285,3 @@ if __name__ == "__main__":
         asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:
         print("We've been fucked")
-
-
-
-class IntersectionCalculator:
-    def __init__(self, x_size, y_size, snakes, time_speed_pairs):
-        self.init_time_millisecond = datetime.datetime.utcnow().microsecond * 1000
-        self.x_size = x_size
-        self.y_size = y_size
-        self.snakes = snakes
-        self.speed_time_pairs = time_speed_pairs
-        self.intersection_time = 1 #will be more then required interval
-        for time, speed in time_speed_pairs:
-            self.intersection_time = self.intersection_time + time
-
-    async def run(self):
-        call_delay = datetime.datetime.utcnow().microsecond * 1000 - self.init_time_millisecond
-        for time, speed in self.speed_time_pairs:
-            if call_delay < time:
-                actual_time = time - call_delay
-                self.check_intersection(actual_time, speed)
-            else:
-                call_delay = call_delay - time
-
-    def reset(self, snakes, speed_time_pairs):
-        pass
-
-    def check_intersection(self, duration, speed):
-        pass
-
-
