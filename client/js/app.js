@@ -32,14 +32,18 @@ var Position = function(x, y) {
 
 var Snake = function(id, headPosition, length, direction) {
     var renderPosition = function(position) {
-        ctx.rect(position.x*pxPerBox, position.y*pxPerBox, pxPerBox, pxPerBox);
+        setPositionRect(position)
         var dotMargin = pxPerBox / 3;
-
+        ctx.rect(position.x*pxPerBox, position.y*pxPerBox, pxPerBox, pxPerBox);
         ctx.fillStyle = "white"
         ctx.fillRect(position.x*pxPerBox + dotMargin, position.y*pxPerBox + dotMargin, pxPerBox - dotMargin*2, pxPerBox - dotMargin*2);
 //        ctx.lineWidth = 2
 //        ctx.strokeStyle = "white"
 //        ctx.stroke();
+    }
+
+    var setPositionRect = function(position) {
+        return
     }
     this.body = [headPosition];
     for(i = 1; i < length; i++) {
@@ -54,11 +58,18 @@ var Snake = function(id, headPosition, length, direction) {
     this.update = function(headPosition, direction) {
         console.log("id:", this.id, "headPosition", headPosition)
         this.body.unshift(headPosition)
-        this.body.pop()
+
+        tail = this.body.pop()
+//        ctx.clearRect(tail.x*pxPerBox, tail.y*pxPerBox, pxPerBox, pxPerBox)
+//        ctx.lineWidth = 0
+//        ctx.strokeStyle = "black"
+//        ctx.stroke();
         this.body.forEach(function(position) {
             renderPosition(position)
         })
     }
+
+
 
 
 };
