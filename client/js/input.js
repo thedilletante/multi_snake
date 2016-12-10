@@ -5,16 +5,19 @@
     function setKey(event, status) {
         var code = event.keyCode;
         var key;
-
         switch(code) {
         case 32:
             key = 'SPACE'; break;
+        case 65:
         case 37:
             key = 'LEFT'; break;
+        case 87:
         case 38:
             key = 'UP'; break;
+        case 68:
         case 39:
             key = 'RIGHT'; break;
+        case 83:
         case 40:
             key = 'DOWN'; break;
         default:
