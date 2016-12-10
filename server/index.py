@@ -80,7 +80,7 @@ class Snake:
 
 class GameBoard:
 
-    SPEED_INCREASE_FACTOR = 50
+    SPEED_INCREASE_FACTOR = 10
 
 
     def __init__(self, width, height, clients_info, speed=1):
@@ -163,7 +163,8 @@ class SnakeServer:
         self.loop = loop
         self.game_started = False
 
-    async def on_client_connect(self, websocket, path):
+    @asyncio.coroutine
+    def on_client_connect(self, websocket, path):
         logging.debug("New connection from: {}".format(websocket.remote_address))
 
         if self.game_started:
@@ -176,13 +177,13 @@ class SnakeServer:
         logging.debug("Client({}) added for game, active: {}".format(id, len(self.clients)))
 
         try:
-            await websocket.send(greeting(id))
+            yield from websocket.send(greeting(id))
 
             while not self.game_started:
-                await asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
+                yield from asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
 
             while True:
-                message = await websocket.recv()
+                message = yield from websocket.recv()
                 logging.debug("Client({}) sent an request: {}".format(id, message))
                 decoded = loads(message)
                 direction = Direction.create(decoded["direction"])
@@ -190,11 +191,12 @@ class SnakeServer:
         except websockets.ConnectionClosed:
             logging.debug("Client({}) disconnected".format(id))
 
-    async def presentation_loop(self):
+    @asyncio.coroutine
+    def presentation_loop(self):
         while True:
             try:
                 while len(self.clients) != SnakeServer.NUM_CLIENTS_TO_GAME:
-                    await asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
+                    yield from asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
 
                 logging.debug("Game session started")
 
@@ -210,7 +212,7 @@ class SnakeServer:
                 initial_message = initial_state.build()
 
                 for client in self.clients:
-                    await client.fd.send(initial_message)
+                    yield from client.fd.send(initial_message)
 
                 self.board = GameBoard(100, 100, clients_info)
 
@@ -220,18 +222,18 @@ class SnakeServer:
 
                     state = board_state.encode_state()
                     for client in self.clients:
-                        await client.fd.send(state)
+                        yield from client.fd.send(state)
 
-                    await asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
+                    yield from asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
 
                 # tell the result
                 survived = self.board.get_client_count()
                 if survived == 1:
                     for client in self.clients:
-                        await client.fd.send(self.board.winner_congratulate())
+                        yield from client.fd.send(self.board.winner_congratulate())
                 elif survived == 0:
                     for client in self.clients:
-                        await client.fd.send(draw())
+                        yield from client.fd.send(draw())
 
                 logging.debug("Game is over")
             except websockets.ConnectionClosed:
