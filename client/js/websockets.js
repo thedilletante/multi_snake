@@ -1,4 +1,4 @@
-var ws = new WebSocket("ws://localhost:5678/")
+var ws = new WebSocket("ws://192.168.1.204:5678/")
 var snakes = snakes || {};
 var identity = null
 ws.onmessage = function (event) {
@@ -30,9 +30,15 @@ ws.onmessage = function (event) {
             break;
         }
         case "winner": {
+            if (identity == message.id) {
+                ShowMessage('You are the Winner!!!!');
+            } else {
+                ShowMessage('Loser!');
+            }
             break;
         }
         case "draw": {
+            ShowMessage('Draw');
             break;
         }
         case "busy": {

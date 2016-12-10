@@ -20,6 +20,9 @@ canvas.width = 130 * pxPerBox;
 canvas.height = 70 * pxPerBox;
 document.body.appendChild(canvas);
 
+function ShowMessage(message) {
+    document.getElementById('message').textContent = message;
+};
 
 var Position = function(x, y) {
     this.x = x;
