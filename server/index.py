@@ -1,8 +1,8 @@
 import websockets
 import asyncio
 import datetime
-
 from collections import namedtuple
+from enum import Enum
 
 Client = namedtuple("Client", ["id", "fd"])
 
@@ -49,3 +49,37 @@ if __name__ == "__main__":
         asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:
         print("We've been fucked")
+
+
+class SnakeClient:
+    def __init__(self, headPosition, length, direction):
+        self.body = []
+        for i in range(0, length):
+            self.body.append(Position(0, 0))
+
+class Direction(Enum):
+    top = 0
+    left = 1
+    bottom = 2
+    rigth = 3
+
+class IntersectionCalculator:
+    def __init__(self):
+
+class Position:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def left(self):
+        return Position(self.x - 1, self.y)
+
+    def right(self):
+        return Position(self.x + 1, self.y)
+
+    def top(self):
+        return Position(self.x, self.y - 1)
+
+    def bottom(self):
+        return Position(self.x, self.y + 1)
+
