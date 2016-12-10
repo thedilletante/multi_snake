@@ -1,17 +1,22 @@
 import websockets
 import asyncio
 import datetime
+import logging
 
 from json import dumps, loads
 from collections import namedtuple
 from enum import Enum
 
+
 Client = namedtuple("Client", ["id", "fd"])
 Position = namedtuple("Position", ["x", "y"])
 
+
 # protocol
 def greeting(id):
-    return dumps({"id": id})
+    return dumps({"type":"greeting",
+                  "id": id})
+
 
 class InitialMessageBuilder:
 
@@ -26,7 +31,8 @@ class InitialMessageBuilder:
         }
 
     def build(self):
-        return dumps(self.clients)
+        return dumps({"type": "initial",
+                      "info": self.clients})
 
 
 class PartialStatusMessageBuilder:
@@ -41,7 +47,22 @@ class PartialStatusMessageBuilder:
         }
 
     def build(self):
-        return dumps(self.clients)
+        return dumps({"type": "partial",
+                      "info": self.clients})
+
+
+def winner(id):
+    return dumps({"type": "winner",
+                  "id": id})
+
+
+def draw():
+    return dumps({"type": "draw"})
+
+
+def busy():
+    return dumps({"type": "busy"})
+
 
 class Direction(Enum):
     top = 0
@@ -86,17 +107,11 @@ class Direction(Enum):
             return Direction.right
         raise Exception()
 
-
-
-class IntersectionCalculator:
-    def __init__(self):
-        pass
-
-
 class Snake:
     def __init__(self, head_position, length, direction):
         self.body = [head_position]
         self.direction = direction
+        self.length = length
 
         x_factor = direction.get_x_factor()
         y_factor = direction.get_y_factor()
@@ -108,23 +123,32 @@ class Snake:
             self.body.pop()  # TODO: avoid of pessimisation
             self.body = [self.get_new_head_position()] + self.body
 
-    def get_new_head_position(self):
-        return Position(self.body[0].x + self.direction.get_x_factor(),
-                        self.body[0].y + self.direction.get_y_factor())
+    def get_new_head_position(self, speed=1):
+        return Position(self.body[0].x + speed * self.direction.get_x_factor(),
+                        self.body[0].y + speed * self.direction.get_y_factor())
 
     def update(self, direction):
         self.direction = direction
 
 
 class GameBoard:
+
+    SPEED_INCREASE_FACTOR = 50
+
+
     def __init__(self, width, height, clients_info, speed=1):
         self.width = width
         self.height = height
         self.clients_info = clients_info
         self.speed = speed
         self.loose_snakes = {}
+        self.step = 0
 
-    def next(self):
+    def __iter__(self):
+        self.step = 0
+        return self
+
+    def __next__(self):
         snake_body_map = {}
         snake_head_map = {}
         self.loose_snakes = {}
@@ -138,6 +162,17 @@ class GameBoard:
         for id in self.loose_snakes:
             del(self.clients_info[id])
 
+        self.step += 1
+        if self.step == GameBoard.SPEED_INCREASE_FACTOR:
+            self.increase_speed()
+            self.step = 0
+
+        if self.get_client_count() < 2:
+            raise StopIteration()
+
+        return self
+
+
     def turn_client(self, id, direction):
         if id in self.clients_info:
             self.clients_info[id].update(direction)
@@ -149,7 +184,7 @@ class GameBoard:
         return len(self.clients_info)
 
     def winner_congratulate(self):
-        return "congratulation! {} win!".format(next(iter(self.clients_info.keys())))
+        return winner(next(iter(self.clients_info.keys())))
 
     def encode_state(self):
         live_info = {}
@@ -184,7 +219,6 @@ class SnakeServer:
 
     REFRESH_TIMEOUT = 0.5
     NUM_CLIENTS_TO_GAME = 2
-    BUSY_MESSAGE = "BUSY NOW"
 
     def __init__(self, loop):
         self.clients = []
@@ -192,13 +226,16 @@ class SnakeServer:
         self.game_started = False
 
     async def on_client_connect(self, websocket, path):
+        logging.debug("New connection from: {}".format(websocket.remote_address))
+
         if self.game_started:
-            websocket.send(SnakeServer.BUSY_MESSAGE)
+            websocket.send(busy())
             return
 
         id = hash("{}{}".format(websocket.remote_address, datetime.datetime.utcnow().isoformat()))
         client = Client(id, websocket)
-        self.clients.append(Client(id, websocket))
+        self.clients.append(client)
+        logging.debug("Client({}) added for game, active: {}".format(id, len(self.clients)))
 
         try:
             await websocket.send(greeting(id))
@@ -208,65 +245,79 @@ class SnakeServer:
 
             while True:
                 message = await websocket.recv()
+                logging.debug("Client({}) sent an request: {}".format(id, message))
                 decoded = loads(message)
                 direction = Direction.create(decoded["direction"])
                 self.board.turn_client(id, direction)
         except websockets.ConnectionClosed:
-            self.clients.remove(client)
+            logging.debug("Client({}) disconnected".format(id))
 
     async def presentation_loop(self):
-        while len(self.clients) != 2:
-            await asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
-
-        self.game_started = True
-        clients_info = {}
-        initial_state = InitialMessageBuilder()
-        for index, client in enumerate(self.clients):
-            head = Position(40 + 20 * index, 40 + 20 * index)
-            length = 20
-            direction = Direction.left if index == 0 else Direction.right
-            clients_info[client.id] = Snake(head, length, direction)
-            initial_state.add_client(client.id, head, length, direction)
-
-        initial_message = initial_state.build()
-
-        for client in self.clients:
-            await client.fd.send(initial_message)
-
-        self.board = GameBoard(100, 100, clients_info)
-        num = 0
         while True:
-            for client in self.clients:
-                try:
-                    await client.fd.send(self.board.encode_state())
-                    if self.board.get_client_count() == 1:
-                        await client.fd.send(format("<h1>{}</h1>", self.board.winner_congratulate()))
-                        await asyncio.sleep(20000)
-                    if self.board.get_client_count() == 0:
-                        await client.fd.send(format("<h1>You're all die fucking loosers</h1>"))
-                        await asyncio.sleep(20000)
+            try:
+                while len(self.clients) != SnakeServer.NUM_CLIENTS_TO_GAME:
+                    await asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
 
-                except websockets.ConnectionClosed:
-                    self.clients.remove(client)
+                logging.debug("Game session started")
 
-            num += 1
-            if num == 50:
-                self.board.increase_speed()
-                num = 0
+                clients_info = {}
+                initial_state = InitialMessageBuilder()
+                for index, client in enumerate(self.clients):
+                    head = Position(40 + 20 * index, 40 + 20 * index)
+                    length = 20
+                    direction = Direction.left if index == 0 else Direction.right
+                    clients_info[client.id] = Snake(head, length, direction)
+                    initial_state.add_client(client.id, head, length, direction)
 
-            self.board.next()
-            await asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
+                initial_message = initial_state.build()
 
-        self.game_started = False
+                for client in self.clients:
+                    await client.fd.send(initial_message)
+
+                self.board = GameBoard(100, 100, clients_info)
+
+                # the game loop
+                self.game_started = True
+                for board_state in self.board:
+
+                    state = board_state.encode_state()
+                    for client in self.clients:
+                        await client.fd.send(state)
+
+                    await asyncio.sleep(SnakeServer.REFRESH_TIMEOUT)
+
+                # tell the result
+                survived = self.board.get_client_count()
+                if survived == 1:
+                    for client in self.clients:
+                        await client.fd.send(self.board.winner_congratulate())
+                elif survived == 0:
+                    for client in self.clients:
+                        await client.fd.send(draw())
+
+                logging.debug("Game is over")
+            except websockets.ConnectionClosed:
+                logging.debug("Client disconnected, game is over".format())
+            finally:
+                self.clients = []
+                self.game_started = False
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG, handlers=[logging.StreamHandler()])
+
+    host = ""
+    port = 5678
     try:
         server = SnakeServer(asyncio.get_event_loop())
-        start_server = websockets.serve(server.on_client_connect, '', 5678)
+        start_server = websockets.serve(server.on_client_connect, host, port)
 
         asyncio.get_event_loop().run_until_complete(start_server)
+        logging.debug("Started game server: {}:{}".format(host, port))
+        # TODO:  refactor it
+        # game loop should be started after client connections
         asyncio.get_event_loop().run_until_complete(asyncio.Task(server.presentation_loop()))
+        logging.debug("Presentation loop started")
         asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:
-        print("We've been fucked")
+        logging.debug("The game server was shut")
