@@ -29,14 +29,10 @@ var Position = function(x, y) {
 
 var Snake = function(id, headPosition, length, direction) {
     this.body = [headPosition];
-    console.log(this.body);
     for(i = 1; i < length; i++) {
-        console.log(this.body.length);
         lastX = this.body[i - 1].x;
         lastY = this.body[i - 1].y;
-        console.log("coordinates:", lastX, lastY);
         nextPosition = new Position(lastX - getXFactor(direction) , lastY - getYFactor(direction));
-        console.log("new position", nextPosition)
         this.body.push(nextPosition);
     }
     this.direction = direction;
@@ -44,8 +40,8 @@ var Snake = function(id, headPosition, length, direction) {
 };
 
 var snakes = [
-    new Snake("1", new Position(10, 20), 10, 3),
-    new Snake("1", new Position(32, 30), 10, 1)
+    new Snake("1", new Position(80, 20), 10, 3),
+    new Snake("1", new Position(30, 40), 10, 1)
 ];
 render(snakes)
 
@@ -77,12 +73,19 @@ function handle() {
 
 
 
-// Draw everything
 function render(snakes)  {
     snakes.forEach(function(snake) {
         renderSnake(snake);
     });
 };
+
+function renderSnake(snake) {
+//    console.log(snake)
+    snake.body.forEach(function(position) {
+//        console.log(position)
+       renderPosition(position);
+    });
+}
 
 function getXFactor(direction) {
     if(direction === 1) {
@@ -104,20 +107,14 @@ function getYFactor(direction) {
     return 0
 }
 
-function renderSnake(snake) {
-//    console.log(snake)
-    snake.body.forEach(function(position) {
-//        console.log(position)
-       renderPosition(position);
-    });
-}
+
 
 function renderPosition(position) {
     ctx.rect(position.x*pxPerBox, position.y*pxPerBox, pxPerBox, pxPerBox);
     var dotMargin = pxPerBox / 3;
     ctx.fillStyle="white";
     ctx.fillRect(position.x*pxPerBox + dotMargin, position.y*pxPerBox + dotMargin, pxPerBox - dotMargin*2, pxPerBox - dotMargin*2);
-    ctx.lineWidth=1;
+    ctx.lineWidth=2;
     ctx.strokeStyle="white";
     ctx.stroke();
 }
