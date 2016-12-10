@@ -55,19 +55,19 @@ function main() {
 
 function handle() {
     if(input.isDown('DOWN')) {
-            alert(1)
+        ws.send(3)
     }
 
     if(input.isDown('UP')) {
-        alert(1)
+        ws.send(0)
     }
 
     if(input.isDown('LEFT')) {
-        alert(1)
+        ws.send(1)
     }
 
     if(input.isDown('RIGHT')) {
-        alert(1)
+        ws.send(2)
     }
 }
 
