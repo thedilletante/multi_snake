@@ -32,12 +32,12 @@ var Snake = function(id, headPosition, length, direction) {
     console.log(this.body);
     for(i = 1; i < length; i++) {
         console.log(this.body.length);
-        lastX = this.body[this.body.length - 1].x;
-        lastY = this.body[this.body.length - 1].y;
-        console.log(lastX, lastY);
-        nextPosition = new Position(lastX , lastY);
-        console.log("xf", getXFactor(direction), getYFactor(direction));
-        this.body.push(new Position(lastX - getXFactor, lastY - getYFactor));
+        lastX = this.body[i - 1].x;
+        lastY = this.body[i - 1].y;
+        console.log("coordinates:", lastX, lastY);
+        nextPosition = new Position(lastX - getXFactor(direction) , lastY - getYFactor(direction));
+        console.log("new position", nextPosition)
+        this.body.push(nextPosition);
     }
     this.direction = direction;
     this.id = id;
