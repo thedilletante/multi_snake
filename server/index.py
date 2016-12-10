@@ -155,7 +155,7 @@ class GameBoard:
 
 class SnakeServer:
 
-    REFRESH_TIMEOUT = 0.2
+    REFRESH_TIMEOUT = 0.05
     NUM_CLIENTS_TO_GAME = 2
 
     def __init__(self, loop):

@@ -2,11 +2,7 @@ Math.random() //uncache feature
 // A cross-browser requestAnimationFrame
 // See https://hacks.mozilla.org/2011/08/animating-with-javascript-from-setinterval-to-requestanimationframe/
 var requestAnimFrame = (function(){
-    return function(callback){
-            window.setTimeout(callback, 1000 / 1);
-        };
-
-        window.requestAnimationFrame       ||
+    return window.requestAnimationFrame       ||
         window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame    ||
         window.oRequestAnimationFrame      ||
@@ -31,8 +27,13 @@ var Position = function(x, y) {
 };
 
 var Snake = function(id, headPosition, length, direction) {
+    this.render = function() {
+        this.body.forEach(function(position) {
+            renderPosition(position)
+        })
+    }
+
     var renderPosition = function(position) {
-        setPositionRect(position)
         var dotMargin = pxPerBox / 3;
         ctx.rect(position.x*pxPerBox, position.y*pxPerBox, pxPerBox, pxPerBox);
         ctx.fillStyle = "white"
@@ -42,9 +43,6 @@ var Snake = function(id, headPosition, length, direction) {
 //        ctx.stroke();
     }
 
-    var setPositionRect = function(position) {
-        return
-    }
     this.body = [headPosition];
     for(i = 1; i < length; i++) {
         lastX = this.body[i - 1].x;
@@ -56,7 +54,7 @@ var Snake = function(id, headPosition, length, direction) {
     this.direction = direction;
     this.id = id;
     this.update = function(headPosition, direction) {
-        console.log("id:", this.id, "headPosition", headPosition)
+        // console.log("id:", this.id, "headPosition", headPosition)
         this.body.unshift(headPosition)
 
         tail = this.body.pop()
@@ -64,9 +62,9 @@ var Snake = function(id, headPosition, length, direction) {
 //        ctx.lineWidth = 0
 //        ctx.strokeStyle = "black"
 //        ctx.stroke();
-        this.body.forEach(function(position) {
-            renderPosition(position)
-        })
+        // this.body.forEach(function(position) {
+        //     renderPosition(position)
+        // })
     }
 
 
@@ -74,10 +72,7 @@ var Snake = function(id, headPosition, length, direction) {
 
 };
 
-var snakes = [
-    new Snake("1", new Position(90, 20), 10, 3),
-    new Snake("2", new Position(30, 40), 10, 1)
-];
+var snakes = snakes || {};
 
 main();
 // The main game loop
@@ -88,11 +83,17 @@ function main() {
     ctx.fillStyle = '#444444';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    snakes.forEach(function(snake) {
-        headPosition = getActualHeadPosition(snake)
-        direction = getActualDirection(snake)
-        snake.update(headPosition, direction)
-    })
+    for (var k in snakes) {
+        if (snakes.hasOwnProperty(k)) {
+            console.log(snakes[k])
+            snakes[k].render()
+
+            // headPosition = getActualHeadPosition(snakes[k])
+            // direction = getActualDirection(snakes[k])
+            // snakes[k].update(headPosition, direction)
+        }
+    }
+
 
     requestAnimFrame(main);
 };
@@ -107,38 +108,38 @@ function getActualHeadPosition(snake) {
 
 function handle() {
     if(input.isDown('DOWN')) {
-        ws.send(3)
+        ws.send('{"direction":"BOTTOM"}')
     }
 
     if(input.isDown('UP')) {
-        ws.send(0)
+        ws.send('{"direction":"TOP"}')
     }
 
     if(input.isDown('LEFT')) {
-        ws.send(1)
+        ws.send('{"direction":"LEFT"}')
     }
 
     if(input.isDown('RIGHT')) {
-        ws.send(2)
+        ws.send('{"direction":"RIGHT"}')
     }
 }
 
 
 function getXFactor(direction) {
-    if(direction === 1) {
+    if(direction === "LEFT") {
         return -1
     }
-    if(direction === 3) {
+    if(direction === "RIGHT") {
         return 1
     }
     return 0
 }
 
 function getYFactor(direction) {
-    if(direction === 0) {
+    if(direction === "TOP") {
         return -1
     }
-    if(direction === 2) {
+    if(direction === "BOTTOM") {
         return 1
     }
     return 0
