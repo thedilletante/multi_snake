@@ -38,17 +38,24 @@ class InitialMessageBuilder:
 class PartialStatusMessageBuilder:
 
     def __init__(self):
-        self.clients = {}
+        self.loose_info = {}
+        self.live_info = {}
 
-    def add_client_info(self, id, head, direction):
-        self.clients[id] = {
+    def add_loose_info(self, id, head):
+        self.loose_info[id] = {
+            "head": {"x": head.x, "y": head.y},
+        }
+
+    def add_live_info(self, id, head, direction):
+        self.live_info[id] = {
             "head": {"x": head.x, "y": head.y},
             "direction": str(direction)
         }
 
     def build(self):
         return dumps({"type": "partial",
-                      "info": self.clients})
+                      "loose_info": self.loose_info,
+                      "live_info": self.live_info})
 
 
 def winner(id):
@@ -143,6 +150,7 @@ class GameBoard:
         self.speed = speed
         self.loose_snakes = {}
         self.step = 0
+        self.partial_message = PartialStatusMessageBuilder()
 
     def __iter__(self):
         self.step = 0
@@ -167,6 +175,14 @@ class GameBoard:
             self.increase_speed()
             self.step = 0
 
+        # generate partial result
+        self.partial_message = PartialStatusMessageBuilder()
+        for id, client_info in self.clients_info.items():
+            self.partial_message.add_live_info(id, next(iter(client_info.body)), client_info.direction)
+        for id, position in self.loose_snakes.items():
+            self.partial_message.add_loose_info(id, position)
+
+
         if self.get_client_count() < 2:
             raise StopIteration()
 
@@ -187,25 +203,7 @@ class GameBoard:
         return winner(next(iter(self.clients_info.keys())))
 
     def encode_state(self):
-        live_info = {}
-        for id, client_info in self.clients_info.items():
-            live_info[id] = {
-                "head": {
-                    "x": client_info.body[0].x,
-                    "y": client_info.body[0].y
-                },
-                "direction": str(client_info.direction)}
-        loose_info = {}
-        for id, position in self.loose_snakes.items():
-            loose_info[id] = {
-                "x": position.x,
-                "y": position.y
-            }
-        output = {
-            "loose_info": loose_info,
-            "live_info": live_info
-        }
-        return dumps(output)
+        return self.partial_message.build()
 
     def define_loose_snakes(self, head_map, body_map):
         for position, id in head_map.items():
@@ -217,7 +215,7 @@ class GameBoard:
 
 class SnakeServer:
 
-    REFRESH_TIMEOUT = 0.5
+    REFRESH_TIMEOUT = 0.2
     NUM_CLIENTS_TO_GAME = 2
 
     def __init__(self, loop):
