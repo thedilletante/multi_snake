@@ -15,9 +15,9 @@ var requestAnimFrame = (function(){
 // Create the canvas
 var canvas = document.createElement("canvas");
 var ctx = canvas.getContext("2d");
-var pxPerBox = 10;
-canvas.width = 130 * pxPerBox;
-canvas.height = 70 * pxPerBox;
+var pxPerBox = 7;
+canvas.width = 100 * pxPerBox;
+canvas.height = 100 * pxPerBox;
 document.body.appendChild(canvas);
 
 function ShowMessage(message) {
