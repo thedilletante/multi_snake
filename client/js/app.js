@@ -25,23 +25,23 @@ ctx.fillRect(0, 0, canvas.width, canvas.height);
 var Position = function(x, y) {
     this.x = x;
     this.y = y;
-}
+};
 
 var Snake = function(id, headPosition, length, direction) {
-    this.body = [headPosition]
-    console.log(this.body)
+    this.body = [headPosition];
+    console.log(this.body);
     for(i = 1; i < length; i++) {
-        console.log(this.body.length)
-        lastX = this.body[this.body.length - 1].x
-        lastY = this.body[this.body.length - 1].y
-        console.log(lastX, lastY)
-        nextPosition = new Position(lastX , lastY)
-        console.log("xf", getXFactor(direction), getYFactor(direction))
-        this.body.push(new Position(lastX - getXFactor, lastY - getYFactor))
+        console.log(this.body.length);
+        lastX = this.body[this.body.length - 1].x;
+        lastY = this.body[this.body.length - 1].y;
+        console.log(lastX, lastY);
+        nextPosition = new Position(lastX , lastY);
+        console.log("xf", getXFactor(direction), getYFactor(direction));
+        this.body.push(new Position(lastX - getXFactor, lastY - getYFactor));
     }
-    this.direction = direction
-    this.id = id
-}
+    this.direction = direction;
+    this.id = id;
+};
 
 var snakes = [
     new Snake("1", new Position(10, 20), 10, 3),
