@@ -29,10 +29,14 @@ var Position = function(x, y) {
 
 var Snake = function(id, headPosition, length, direction) {
     this.body = [headPosition]
+    console.log(this.body)
     for(i = 1; i < length; i++) {
-    lastX = this.body[this.body.length - 1].x
-    lastY = this.body[this.body.length - 1].y
-    console.log(lastX, lastY)
+        console.log(this.body.length)
+        lastX = this.body[this.body.length - 1].x
+        lastY = this.body[this.body.length - 1].y
+        console.log(lastX, lastY)
+        nextPosition = new Position(lastX , lastY)
+        console.log("xf", getXFactor(direction), getYFactor(direction))
         this.body.push(new Position(lastX - getXFactor, lastY - getYFactor))
     }
     this.direction = direction
@@ -101,9 +105,9 @@ function getYFactor(direction) {
 }
 
 function renderSnake(snake) {
-    console.log(snake)
+//    console.log(snake)
     snake.body.forEach(function(position) {
-        console.log(position)
+//        console.log(position)
        renderPosition(position);
     });
 }
