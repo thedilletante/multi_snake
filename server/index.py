@@ -5,6 +5,7 @@ import json
 from collections import namedtuple
 from enum import Enum
 
+
 Client = namedtuple("Client", ["id", "fd"])
 MoveInfo = namedtuple("MoveInfo", ["head", "direction"])
 
@@ -160,20 +161,44 @@ if __name__ == "__main__":
 class Snake:
     def __init__(self, head_position, length, direction):
         self.body = [head_position]
+        self.direction = direction
         x_factor = direction.get_x_factor()
         y_factor = direction.get_y_factor()
-
         for i in range(0, length):
-            self.body.append(Position(self.body[-1].x + x_factor, self.body[-1].y + y_factor))
+            self.body.append(Position(self.body[-1].x - x_factor, self.body[-1].y - y_factor))
 
     def move(self, direction):
+        self.direction = direction
         self.body = [self.get_new_head_position(direction)] + self.body.pop()
 
     def get_new_head_position(self, direction):
         return Position(self.body[0].x + direction.get_x_factor(), self.body[0].y + direction.get_y_factor())
 
 
-
 class IntersectionCalculator:
-    def __init__(self):
+    def __init__(self, x_size, y_size, snakes, time_speed_pairs):
+        self.init_time_millisecond = datetime.datetime.utcnow().microsecond * 1000
+        self.x_size = x_size
+        self.y_size = y_size
+        self.snakes = snakes
+        self.speed_time_pairs = time_speed_pairs
+        self.intersection_time = 1 #will be more then required interval
+        for time, speed in time_speed_pairs:
+            self.intersection_time = self.intersection_time + time
+
+    async def run(self):
+        call_delay = datetime.datetime.utcnow().microsecond * 1000 - self.init_time_millisecond
+        for time, speed in self.speed_time_pairs:
+            if call_delay < time:
+                actual_time = time - call_delay
+                self.check_intersection(actual_time, speed)
+            else:
+                call_delay = call_delay - time
+
+    def reset(self, snakes, speed_time_pairs):
         pass
+
+    def check_intersection(self, duration, speed):
+        pass
+
+
