@@ -51,20 +51,41 @@ if __name__ == "__main__":
         print("We've been fucked")
 
 
-class SnakeClient:
-    def __init__(self, headPosition, length, direction):
-        self.body = []
+class Snake:
+    def __init__(self, head_position, length, direction):
+        self.body = [head_position]
+        x_factor = direction.get_x_factor()
+        y_factor = direction.get_y_factor()
+
         for i in range(0, length):
-            self.body.append(Position(0, 0))
+            self.body.append(Position(self.body[-1].x + x_factor, self.body[-1].y + y_factor))
+
+    def move(self, direction):
+        self.body = [self.get_new_head_position(direction)] + self.body.pop()
+
+    def get_new_head_position(self, direction):
+        return Position(self.body[0].x + direction.get_x_factor(), self.body[0].y + direction.get_y_factor())
+
 
 class Direction(Enum):
     top = 0
     left = 1
     bottom = 2
-    rigth = 3
+    right = 3
 
-class IntersectionCalculator:
-    def __init__(self):
+    def get_x_factor(self):
+        if self == Direction.left:
+            return -1
+        if self == Direction.right:
+            return 1
+        return 0
+
+    def get_y_factor(self):
+        if self == Direction.top:
+            return -1
+        if self == Direction.bottom:
+            return 1
+        return 0
 
 class Position:
     def __init__(self, x, y):
@@ -83,3 +104,7 @@ class Position:
     def bottom(self):
         return Position(self.x, self.y + 1)
 
+
+class IntersectionCalculator:
+    def __init__(self):
+        pass
