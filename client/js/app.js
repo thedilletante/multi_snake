@@ -62,7 +62,7 @@ function main() {
     var now = Date.now();
     var dt = (now - lastTime) / 1000.0;
 
-    //update(dt);
+    update(dt);
     render();
 
     lastTime = now;
@@ -71,33 +71,29 @@ function main() {
 };
 init();
 function init() {
-    lastTime = Date.now();
     main();
 }
 
 // Update game objects
 function update(dt) {
-    gameTime += dt;
-
-    //handleInput(dt);
-    updateEntities(dt);
+    handleInput();
 };
 
-function handleInput(dt) {
+function handleInput() {
     if(input.isDown('DOWN') || input.isDown('s')) {
-        player.pos[1] += playerSpeed * dt;
+        alert(1)
     }
 
     if(input.isDown('UP') || input.isDown('w')) {
-        player.pos[1] -= playerSpeed * dt;
+        alert(1)
     }
 
     if(input.isDown('LEFT') || input.isDown('a')) {
-        player.pos[0] -= playerSpeed * dt;
+        alert(1)
     }
 
     if(input.isDown('RIGHT') || input.isDown('d')) {
-        player.pos[0] += playerSpeed * dt;
+        alert(1)
     }
 }
 
