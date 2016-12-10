@@ -1,4 +1,4 @@
-
+Math.random() //uncache feature
 // A cross-browser requestAnimationFrame
 // See https://hacks.mozilla.org/2011/08/animating-with-javascript-from-setinterval-to-requestanimationframe/
 var requestAnimFrame = (function(){
@@ -16,113 +16,107 @@ var requestAnimFrame = (function(){
 var canvas = document.createElement("canvas");
 var ctx = canvas.getContext("2d");
 var pxPerBox = 10;
-canvas.width = 50 * pxPerBox;
-canvas.height = 50 * pxPerBox;
+canvas.width = 140 * pxPerBox;
+canvas.height = 75 * pxPerBox;
 document.body.appendChild(canvas);
+ctx.fillStyle = '#000000';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+var Position = function(x, y) {
+    this.x = x;
+    this.y = y;
+}
+
+var Snake = function(id, headPosition, length, direction) {
+    this.body = [headPosition]
+    for(i = 1; i < length; i++) {
+    lastX = this.body[this.body.length - 1].x
+    lastY = this.body[this.body.length - 1].y
+    console.log(lastX, lastY)
+        this.body.push(new Position(lastX - getXFactor, lastY - getYFactor))
+    }
+    this.direction = direction
+    this.id = id
+}
 
 var snakes = [
-    {
-        id: 1,
-        direction: 2,
-        boxes: [
-            [10, 20],
-            [9, 20],
-            [8, 20],
-            [7, 20],
-            [6, 20],
-            [5, 20],
-            [4, 20],
-            [3, 20],
-            [2, 20],
-            [1, 20]
-        ]
-    },
-    {
-        id: 2,
-        direction: 4,
-        boxes: [
-            [32,30],
-            [33,30],
-            [34,30],
-            [35,30],
-            [36,30],
-            [37,30],
-            [38,30],
-            [39,30],
-            [40,30],
-            [41,30]
-        ]
-    }
+    new Snake("1", new Position(10, 20), 10, 3),
+    new Snake("1", new Position(32, 30), 10, 1)
 ];
+render(snakes)
 
-
+main();
 // The main game loop
 var lastTime;
 function main() {
-    var now = Date.now();
-    var dt = (now - lastTime) / 1000.0;
-
-    update(dt);
-    render();
-
-    lastTime = now;
-    console.log(lastTime);
+    handle();
     requestAnimFrame(main);
 };
-init();
-function init() {
-    main();
-}
 
-// Update game objects
-function update(dt) {
-    handleInput();
-};
+function handle() {
+    if(input.isDown('DOWN')) {
+            alert(1)
+    }
 
-function handleInput() {
-    if(input.isDown('DOWN') || input.isDown('s')) {
+    if(input.isDown('UP')) {
         alert(1)
     }
 
-    if(input.isDown('UP') || input.isDown('w')) {
+    if(input.isDown('LEFT')) {
         alert(1)
     }
 
-    if(input.isDown('LEFT') || input.isDown('a')) {
-        alert(1)
-    }
-
-    if(input.isDown('RIGHT') || input.isDown('d')) {
+    if(input.isDown('RIGHT')) {
         alert(1)
     }
 }
+
+
 
 // Draw everything
-function render()  {
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+function render(snakes)  {
     snakes.forEach(function(snake) {
         renderSnake(snake);
-        popped = snake.boxes.pop();
-        popped[0]++;
-        popped[1]++;
-        snake.boxes.unshift(popped);
     });
 };
 
+function getXFactor(direction) {
+    if(direction === 1) {
+        return -1
+    }
+    if(direction === 3) {
+        return 1
+    }
+    return 0
+}
+
+function getYFactor(direction) {
+    if(direction === 0) {
+        return -1
+    }
+    if(direction === 2) {
+        return 1
+    }
+    return 0
+}
+
 function renderSnake(snake) {
-    snake.boxes.forEach(function(box) {
-       renderBox(box[0], box[1]);
+    console.log(snake)
+    snake.body.forEach(function(position) {
+        console.log(position)
+       renderPosition(position);
     });
 }
 
-function renderBox(x, y) {
-    ctx.rect(x*pxPerBox, y*pxPerBox, pxPerBox, pxPerBox);
+function renderPosition(position) {
+    ctx.rect(position.x*pxPerBox, position.y*pxPerBox, pxPerBox, pxPerBox);
     var dotMargin = pxPerBox / 3;
     ctx.fillStyle="white";
-    ctx.fillRect(x*pxPerBox + dotMargin, y*pxPerBox + dotMargin, pxPerBox - dotMargin*2, pxPerBox - dotMargin*2);
+    ctx.fillRect(position.x*pxPerBox + dotMargin, position.y*pxPerBox + dotMargin, pxPerBox - dotMargin*2, pxPerBox - dotMargin*2);
     ctx.lineWidth=1;
     ctx.strokeStyle="white";
     ctx.stroke();
+}
+
+function hideBox(box) {
 }
