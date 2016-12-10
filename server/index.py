@@ -7,7 +7,7 @@ from enum import Enum
 
 
 Client = namedtuple("Client", ["id", "fd"])
-MoveInfo = namedtuple("MoveInfo", ["head", "direction"])
+Position = namedtuple("Position", ["x", "y"])
 
 
 class Direction(Enum):
@@ -30,38 +30,33 @@ class Direction(Enum):
             return 1
         return 0
 
+
 class IntersectionCalculator:
     def __init__(self):
         pass
 
-class Position:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
+class Snake:
+    def __init__(self, head_position, length, direction):
+        self.body = [head_position]
+        self.direction = direction
 
-    def left(self, speed=1):
-        return Position(self.x - speed, self.y)
+        x_factor = direction.get_x_factor()
+        y_factor = direction.get_y_factor()
+        for i in range(0, length):
+            self.body.append(Position(self.body[-1].x - x_factor, self.body[-1].y - y_factor))
 
-    def right(self, speed=1):
-        return Position(self.x + speed, self.y)
+    def move(self, speed=1):
+        for i in range(0, speed):
+            self.body.pop() # TODO: avoid of pessimisation
+            self.body = [self.get_new_head_position()] + self.body
 
-    def top(self, speed=1):
-        return Position(self.x, self.y - speed)
+    def get_new_head_position(self):
+        return Position(self.body[0].x + self.direction.get_x_factor(),
+                        self.body[0].y + self.direction.get_y_factor())
 
-    def bottom(self, speed=1):
-        return Position(self.x, self.y + speed)
+    def update(self, direction):
+        self.clients_info[id].direction = direction
 
-    def move(self, direction, speed=1):
-        if direction == Direction.top:
-            return self.top(speed)
-        elif direction == Direction.left:
-            return self.left(speed)
-        elif direction == Direction.bottom:
-            return self.bottom(speed)
-        elif direction == Direction.right:
-            return self.right(speed)
-        else:
-            raise Exception("Could not move to unknown direction")
 
 class GameBoard:
 
@@ -72,15 +67,12 @@ class GameBoard:
         self.speed = speed
 
     def next(self):
-        for id, move_info in self.clients_info.items():
-            new_info = MoveInfo(move_info.head.move(move_info.direction, self.speed),
-                         move_info.direction)
-            self.clients_info[id] = new_info
-
+        for id, snake in self.clients_info.items():
+            snake.move()
 
     def turn_client(self, id, direction):
         if id in self.clients_info:
-            self.clients_info[id].direction = direction
+            self.clients_info[id].update(direction)
 
     def increase_speed(self):
         self.speed *= 2
@@ -88,7 +80,7 @@ class GameBoard:
     def encode_state(self):
         info = {}
         for id, client_info in self.clients_info.items():
-            info[id] = {"head":{"x":client_info.head.x, "y":client_info.head.y},
+            info[id] = {"head":{"x":client_info.body[0].x, "y":client_info.body[0].y},
                         "direction":str(client_info.direction)}
         return json.dumps(info)
 
@@ -124,10 +116,11 @@ class SnakeServer:
 
         clients_info = {}
         for index, client in enumerate(self.clients):
-
             clients_info[client.id] = \
-                MoveInfo(Position(40 + 20 * index, 40 + 20 * index),
-                         Direction.left if index == 0 else Direction.right)
+                Snake(Position(40 + 20 * index, 40 + 20 * index),
+                      20,
+                      Direction.left if index == 0 else Direction.right)
+
         board = GameBoard(100, 100, clients_info)
         num = 0
         while True:
@@ -157,22 +150,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("We've been fucked")
 
-
-class Snake:
-    def __init__(self, head_position, length, direction):
-        self.body = [head_position]
-        self.direction = direction
-        x_factor = direction.get_x_factor()
-        y_factor = direction.get_y_factor()
-        for i in range(0, length):
-            self.body.append(Position(self.body[-1].x - x_factor, self.body[-1].y - y_factor))
-
-    def move(self, direction):
-        self.direction = direction
-        self.body = [self.get_new_head_position(direction)] + self.body.pop()
-
-    def get_new_head_position(self, direction):
-        return Position(self.body[0].x + direction.get_x_factor(), self.body[0].y + direction.get_y_factor())
 
 
 class IntersectionCalculator:
