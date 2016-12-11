@@ -12,7 +12,7 @@ class Game:
 
     DEFAULT_HEIGHT = 100
     DEFAULT_WIDTH = 100
-    REFRESH_TIMEOUT = 0.2
+    REFRESH_TIMEOUT = 0.05
     NUM_CLIENTS_TO_GAME = 2
 
     def __init__(self, clients, loop):
