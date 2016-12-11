@@ -1,4 +1,5 @@
 from protocol import *
+import logging
 
 
 class StateHandler:
@@ -22,11 +23,13 @@ class StateHandler:
         snake_body_map = {}
         snake_head_map = {}
         self.loose_snakes = {}
+        logging.debug("=====positions=====")
         for id, snake in self.clients_info.items():
             snake.move()
             for position in snake.body:
                 snake_body_map[position] = id
             snake_head_map[snake.body[0]] = id
+            logging.debug("snake {}: {}".format(id, snake_body_map.keys()))
 
         self.define_loose_snakes(snake_head_map, snake_body_map)
         for id in self.loose_snakes:
