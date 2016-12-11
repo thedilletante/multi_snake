@@ -1,10 +1,16 @@
 from collections import namedtuple
+from models.Direction import Direction
 
 Position = namedtuple("Position", ["x", "y"])
 
 
 class Snake:
-    def __init__(self, head_position, length, direction):
+    DEFAULT_LENGTH = 20
+    DEFAULT_DIRECTION = Direction.left
+
+    def __init__(self, id, head_position, length=DEFAULT_LENGTH, direction=DEFAULT_DIRECTION):
+        self.id = id
+        self.head_position = head_position
         self.body = [head_position]
         self.direction = direction
         self.length = length

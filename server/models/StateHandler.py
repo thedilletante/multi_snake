@@ -66,6 +66,16 @@ class StateHandler:
     def encode_state(self):
         return self.partial_message.build()
 
+    def initial_message(self):
+        message = InitialMessageBuilder()
+        for id, snake in self.clients_info.items():
+            message.add_client(id, snake.head_position, snake.length, snake.direction)
+        return message.build()
+
+    def results(self):
+        survived = self.get_client_count()
+        return self.draw() if 0 == survived else self.winner_congratulate()
+
     def define_loose_snakes(self, head_map, body_map):
         for position, id in head_map.items():
             if position in body_map and id != body_map[position]:

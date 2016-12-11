@@ -1,102 +1,44 @@
-import websockets
 import asyncio
 import datetime
 import logging
-from collections import namedtuple
-from json import loads
-from protocol import *
-from models import *
-from models.Snake import Position
-from models.Snake import Snake
-from models.StateHandler import StateHandler
+import websockets
 
-Client = namedtuple("Client", ["id", "fd"])
+from models.Game import Game
+from models.Client import Client
+from protocol import greeting
+
 
 class Server:
 
-    REFRESH_TIMEOUT = 0.05
-    NUM_CLIENTS_TO_GAME = 2
-
     def __init__(self, loop):
-        self.clients = []
+        self.pending_clients = []
         self.loop = loop
-        self.game_started = False
 
     @asyncio.coroutine
     def on_client_connect(self, websocket, path):
         logging.debug("New connection from: {}".format(websocket.remote_address))
 
-        if self.game_started:
-            websocket.send(busy())
-            return
-
         id = hash("{}{}".format(websocket.remote_address, datetime.datetime.utcnow().isoformat()))
         client = Client(id, websocket)
-        self.clients.append(client)
-        logging.debug("Client({}) added for game, active: {}".format(id, len(self.clients)))
+
+        if len(self.pending_clients) == (Game.NUM_CLIENTS_TO_GAME - 1):
+            # start the game
+            logging.debug("Start the new game")
+            players = [client] + self.pending_clients
+            self.pending_clients = []
+            asyncio.ensure_future(Game(players, self.loop).start(), loop=self.loop)
+            logging.debug("New game session was started")
+        else:
+            self.pending_clients.append(client)
 
         try:
             yield from websocket.send(greeting(id))
 
-            while not self.game_started:
-                yield from asyncio.sleep(Server.REFRESH_TIMEOUT)
-
             while True:
                 message = yield from websocket.recv()
                 logging.debug("Client({}) sent an request: {}".format(id, message))
-                decoded = loads(message)
-                direction = Direction.create(decoded["direction"])
-                self.board.turn_client(id, direction)
+                client.received_command(message)
         except websockets.ConnectionClosed:
             logging.debug("Client({}) disconnected".format(id))
-
-    @asyncio.coroutine
-    def presentation_loop(self):
-        while True:
-            try:
-                while len(self.clients) != Server.NUM_CLIENTS_TO_GAME:
-                    yield from asyncio.sleep(Server.REFRESH_TIMEOUT)
-
-                logging.debug("Game session started")
-
-                clients_info = {}
-                initial_state = InitialMessageBuilder()
-                for index, client in enumerate(self.clients):
-                    head = Position(40 + 20 * index, 40 + 20 * index)
-                    length = 20
-                    direction = Direction.left if index == 0 else Direction.right
-                    clients_info[client.id] = Snake(head, length, direction)
-                    initial_state.add_client(client.id, head, length, direction)
-
-                initial_message = initial_state.build()
-
-                for client in self.clients:
-                    yield from client.fd.send(initial_message)
-
-                self.board = StateHandler(100, 100, clients_info)
-
-                # the game loop
-                self.game_started = True
-                for board_state in self.board:
-
-                    state = board_state.encode_state()
-                    for client in self.clients:
-                        yield from client.fd.send(state)
-
-                    yield from asyncio.sleep(Server.REFRESH_TIMEOUT)
-
-                # tell the result
-                survived = self.board.get_client_count()
-                if survived == 1:
-                    for client in self.clients:
-                        yield from client.fd.send(self.board.winner_congratulate())
-                elif survived == 0:
-                    for client in self.clients:
-                        yield from client.fd.send(draw())
-
-                logging.debug("Game is over")
-            except websockets.ConnectionClosed:
-                logging.debug("Client disconnected, game is over".format())
-            finally:
-                self.clients = []
-                self.game_started = False
+            if client in self.pending_clients:
+                self.pending_clients.remove(client)
