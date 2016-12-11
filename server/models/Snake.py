@@ -1,4 +1,6 @@
-from models import *
+from collections import namedtuple
+
+Position = namedtuple("Position", ["x", "y"])
 
 
 class Snake:

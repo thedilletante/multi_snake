@@ -1,7 +1,7 @@
 import websockets
 import asyncio
 import logging
-from models import *
+from models import Server
 
 
 if __name__ == "__main__":

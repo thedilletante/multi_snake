@@ -2,10 +2,12 @@ import websockets
 import asyncio
 import datetime
 import logging
+from collections import namedtuple
 from json import loads
 from protocol import *
 from models import *
 
+Client = namedtuple("Client", ["id", "fd"])
 
 class Server:
 
