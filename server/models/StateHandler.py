@@ -1,7 +1,7 @@
 from protocol import *
 
 
-class GameBoard:
+class StateHandler:
 
     SPEED_INCREASE_FACTOR = 10
 
@@ -33,7 +33,7 @@ class GameBoard:
             del(self.clients_info[id])
 
         self.step += 1
-        if self.step == GameBoard.SPEED_INCREASE_FACTOR:
+        if self.step == StateHandler.SPEED_INCREASE_FACTOR:
             self.increase_speed()
             self.step = 0
 

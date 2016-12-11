@@ -1,4 +1,4 @@
-var ws = new WebSocket("ws://jagstang.ru:5678/")
+var ws = new WebSocket("ws://localhost:5678/")
 var snakes = snakes || {};
 var identity = null
 ws.onmessage = function (event) {

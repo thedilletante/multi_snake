@@ -6,6 +6,9 @@ from collections import namedtuple
 from json import loads
 from protocol import *
 from models import *
+from models.Snake import Position
+from models.Snake import Snake
+from models.StateHandler import StateHandler
 
 Client = namedtuple("Client", ["id", "fd"])
 
