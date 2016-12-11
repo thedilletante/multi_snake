@@ -74,7 +74,7 @@ class StateHandler:
 
     def results(self):
         survived = self.get_client_count()
-        return self.draw() if 0 == survived else self.winner_congratulate()
+        return draw() if 0 == survived else self.winner_congratulate()
 
     def define_loose_snakes(self, head_map, body_map):
         for position, id in head_map.items():
